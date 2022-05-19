@@ -1,18 +1,18 @@
 import os.path
-from torch.utils.data import Dataset
+import torch.utils.data as data
+import PIL as pil
 import torchvision.transforms as transforms
-from PIL import Image
 import random
 import os.path as osp
 from glob import glob
 import re
 
-DATA_ROOT = "D:\智能计算系统\Market-1501-v15.09.15\Market-1501-v15.09.15"
+DATA_ROOT = "D:\\智能计算系统\\Market-1501-v15.09.15\\Market-1501-v15.09.15"
 LOAD_SIZE = 286
 FINE_SIZE = 256
 
 
-class ReidDataset(Dataset):
+class ReidDataset(data.Dataset):
     def __init__(self):
         self.serial_batches = True
         self.root = DATA_ROOT
@@ -30,7 +30,7 @@ class ReidDataset(Dataset):
     def init_transform(self):
         transform_list = []
         osize = [LOAD_SIZE, LOAD_SIZE]
-        transform_list.append(transforms.Resize(osize, Image.BICUBIC))
+        transform_list.append(transforms.Resize(osize, pil.Image.BICUBIC))
         transform_list.append(transforms.RandomCrop(FINE_SIZE))
 
         transform_list += [transforms.ToTensor(),
@@ -57,8 +57,8 @@ class ReidDataset(Dataset):
         else:
             index_B = random.randint(0, self.B_size - 1)
         B_path = self.B_paths[index_B]
-        A_img = Image.open(A_path).convert('RGB')
-        B_img = Image.open(B_path).convert('RGB')
+        A_img = pil.Image.open(A_path).convert('RGB')
+        B_img = pil.Image.open(B_path).convert('RGB')
 
         A = self.transform(A_img)
         B = self.transform(B_img)
@@ -78,14 +78,11 @@ class ReidDataset(Dataset):
     def __len__(self):
         return max(self.A_size, self.B_size)
 
-    def name(self):
-        return 'UnalignedDataset'
 
-
-class CustomDatasetDataLoader(Dataset):
-    def initialize(self):
+class CustomDatasetDataLoader(data.Dataset):
+    def __init__(self):
         self.dataset = ReidDataset()
-        self.dataloader = torch.utils.data.DataLoader(
+        self.dataloader = data.DataLoader(
             self.dataset,
             batch_size=1,
             shuffle=not self.dataset.serial_batches,
@@ -95,13 +92,8 @@ class CustomDatasetDataLoader(Dataset):
         return self
 
     def __len__(self):
-        return min(len(self.dataset), self.opt.max_dataset_size)
+        return len(self.dataset)
 
     def __iter__(self):
         for i, data in enumerate(self.dataloader):
-            if i * self.opt.batchSize >= self.opt.max_dataset_size:
-                break
             yield data
-
-    def name(self):
-        return 'CustomDatasetDataLoader'
