@@ -57,7 +57,6 @@ class ReidDataset(Dataset):
         else:
             index_B = random.randint(0, self.B_size - 1)
         B_path = self.B_paths[index_B]
-        # print('(A, B) = (%d, %d)' % (index_A, index_B))
         A_img = Image.open(A_path).convert('RGB')
         B_img = Image.open(B_path).convert('RGB')
 
@@ -81,3 +80,28 @@ class ReidDataset(Dataset):
 
     def name(self):
         return 'UnalignedDataset'
+
+
+class CustomDatasetDataLoader(Dataset):
+    def initialize(self):
+        self.dataset = ReidDataset()
+        self.dataloader = torch.utils.data.DataLoader(
+            self.dataset,
+            batch_size=1,
+            shuffle=not self.dataset.serial_batches,
+            num_workers=4)
+
+    def load_data(self):
+        return self
+
+    def __len__(self):
+        return min(len(self.dataset), self.opt.max_dataset_size)
+
+    def __iter__(self):
+        for i, data in enumerate(self.dataloader):
+            if i * self.opt.batchSize >= self.opt.max_dataset_size:
+                break
+            yield data
+
+    def name(self):
+        return 'CustomDatasetDataLoader'
