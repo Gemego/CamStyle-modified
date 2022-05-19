@@ -45,7 +45,8 @@ class ReidDataset(Dataset):
         for fpath in fpaths:
             fname = osp.basename(fpath)
             pid, cam = map(int, pattern.search(fname).groups())
-            if cam not in [cam_id, extra_cam_id]: continue
+            if cam not in [cam_id, extra_cam_id]:
+                continue
             ret.append(os.path.join(path, fname))
         return ret
 
