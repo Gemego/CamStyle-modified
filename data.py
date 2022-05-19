@@ -79,7 +79,7 @@ class ReidDataset(data.Dataset):
         return max(self.A_size, self.B_size)
 
 
-class CustomDatasetDataLoader(data.Dataset):
+class DatasetDataLoader(data.Dataset):
     def __init__(self):
         self.dataset = ReidDataset()
         self.dataloader = data.DataLoader(
