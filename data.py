@@ -1,7 +1,6 @@
 import os.path
 from torch.utils.data import Dataset
-from data.base_dataset import BaseDataset, get_transform
-from data.image_folder import make_dataset
+from data.base_dataset import get_transform
 from PIL import Image
 import random
 import os.path as osp
@@ -11,16 +10,12 @@ import re
 
 class ReidDataset(Dataset):
     def initialize(self, opt):
-        self.opt = opt
+        self.serial_batches = True
         self.root = opt.dataroot
         self.dir = os.path.join(opt.dataroot, 'bounding_box_train')
 
-        if self.opt.isTrain:
-            self.A_paths = self.preprocess(self.dir, cam_id=opt.camA)
-            self.B_paths = self.preprocess(self.dir, cam_id=opt.camB)
-        else:
-            self.A_paths = self.preprocess(self.dir, cam_id=opt.camA, extra_cam_id=opt.camB)
-            self.B_paths = self.preprocess(self.dir, cam_id=opt.camA, extra_cam_id=opt.camB)
+        self.A_paths = self.preprocess(self.dir, cam_id=opt.camA)
+        self.B_paths = self.preprocess(self.dir, cam_id=opt.camB)
 
         self.A_size = len(self.A_paths)
         self.B_size = len(self.B_paths)
@@ -39,7 +34,7 @@ class ReidDataset(Dataset):
 
     def __getitem__(self, index):
         A_path = self.A_paths[index % self.A_size]
-        if self.opt.serial_batches:
+        if self.serial_batches:
             index_B = index % self.B_size
         else:
             index_B = random.randint(0, self.B_size - 1)
