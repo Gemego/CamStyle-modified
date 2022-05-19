@@ -1,4 +1,5 @@
 import os.path
+from torch.utils.data import Dataset
 from data.base_dataset import BaseDataset, get_transform
 from data.image_folder import make_dataset
 from PIL import Image
@@ -8,7 +9,7 @@ from glob import glob
 import re
 
 
-class ReidDataset(BaseDataset):
+class ReidDataset(Dataset):
     def initialize(self, opt):
         self.opt = opt
         self.root = opt.dataroot
@@ -49,12 +50,8 @@ class ReidDataset(BaseDataset):
 
         A = self.transform(A_img)
         B = self.transform(B_img)
-        if self.opt.which_direction == 'BtoA':
-            input_nc = self.opt.output_nc
-            output_nc = self.opt.input_nc
-        else:
-            input_nc = self.opt.input_nc
-            output_nc = self.opt.output_nc
+        input_nc = 3
+        output_nc = 3
 
         if input_nc == 1:  # RGB to gray
             tmp = A[0, ...] * 0.299 + A[1, ...] * 0.587 + A[2, ...] * 0.114
