@@ -1,6 +1,6 @@
 import os.path
 from torch.utils.data import Dataset
-from data.base_dataset import get_transform
+import torchvision.transforms as transforms
 from PIL import Image
 import random
 import os.path as osp
@@ -8,6 +8,9 @@ from glob import glob
 import re
 
 DATA_ROOT = "D:\智能计算系统\Market-1501-v15.09.15\Market-1501-v15.09.15"
+LOAD_SIZE = 286
+FINE_SIZE = 256
+
 
 class ReidDataset(Dataset):
     def __init__(self):
@@ -15,14 +18,25 @@ class ReidDataset(Dataset):
         self.root = DATA_ROOT
         self.dir = os.path.join(self.root, 'bounding_box_train')
 
-    def initialize(self):
-
         self.A_paths = self.preprocess(self.dir, cam_id=1)
         self.B_paths = self.preprocess(self.dir, cam_id=2)
 
         self.A_size = len(self.A_paths)
         self.B_size = len(self.B_paths)
-        self.transform = get_transform(opt)
+
+        self.transform = None
+        self.init_transform()
+
+    def init_transform(self):
+        transform_list = []
+        osize = [LOAD_SIZE, LOAD_SIZE]
+        transform_list.append(transforms.Resize(osize, Image.BICUBIC))
+        transform_list.append(transforms.RandomCrop(FINE_SIZE))
+
+        transform_list += [transforms.ToTensor(),
+                           transforms.Normalize((0.5, 0.5, 0.5),
+                                                (0.5, 0.5, 0.5))]
+        self.transform = transforms.Compose(transform_list)
 
     def preprocess(self, path, cam_id=1, extra_cam_id=-1):
         pattern = re.compile(r'([-\d]+)_c(\d)')
