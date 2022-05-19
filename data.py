@@ -7,15 +7,18 @@ import os.path as osp
 from glob import glob
 import re
 
+DATA_ROOT = "D:\智能计算系统\Market-1501-v15.09.15\Market-1501-v15.09.15"
 
 class ReidDataset(Dataset):
-    def initialize(self, opt):
+    def __init__(self):
         self.serial_batches = True
-        self.root = opt.dataroot
-        self.dir = os.path.join(opt.dataroot, 'bounding_box_train')
+        self.root = DATA_ROOT
+        self.dir = os.path.join(self.root, 'bounding_box_train')
 
-        self.A_paths = self.preprocess(self.dir, cam_id=opt.camA)
-        self.B_paths = self.preprocess(self.dir, cam_id=opt.camB)
+    def initialize(self):
+
+        self.A_paths = self.preprocess(self.dir, cam_id=1)
+        self.B_paths = self.preprocess(self.dir, cam_id=2)
 
         self.A_size = len(self.A_paths)
         self.B_size = len(self.B_paths)
