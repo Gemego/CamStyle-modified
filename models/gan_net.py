@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from torch.nn import init
 import functools
 from torch.optim import lr_scheduler
 
@@ -9,9 +10,9 @@ def get_norm_layer(norm_type='instance'):
     return norm_layer
 
 
-def get_scheduler(optimizer, opt):
+def get_scheduler(optimizer):
     def lambda_rule(epoch):
-        lr_l = 1.0 - max(0, epoch + 1 + opt.epoch_count - opt.niter) / float(opt.niter_decay + 1)
+        lr_l = 1.0 - max(0, epoch -28) / float(21)
         return lr_l
     scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda_rule)
     return scheduler
@@ -21,12 +22,12 @@ def init_weights(net, init_type='normal', gain=0.02):
     def init_func(m):
         classname = m.__class__.__name__
         if hasattr(m, 'weight') and (classname.find('Conv') != -1 or classname.find('Linear') != -1):
-            nn.init.normal_(m.weight.data, 0.0, gain)
+            init.normal_(m.weight.data, 0.0, gain)
             if hasattr(m, 'bias') and m.bias is not None:
-                nn.init.constant_(m.bias.data, 0.0)
+                init.constant_(m.bias.data, 0.0)
         elif classname.find('BatchNorm2d') != -1:
-            nn.init.normal_(m.weight.data, 1.0, gain)
-            nn.init.constant_(m.bias.data, 0.0)
+            init.normal_(m.weight.data, 1.0, gain)
+            init.constant_(m.bias.data, 0.0)
 
     print('initialize network with %s' % init_type)
     net.apply(init_func)

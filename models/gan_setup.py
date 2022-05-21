@@ -1,37 +1,42 @@
 import torch
 import os
+import random
 import itertools
 from collections import OrderedDict
-from util.image_pool import ImagePool
 from . import gan_net
 
+class ImagePool():
+    def __init__(self, pool_size):
+        self.pool_size = pool_size
+        if self.pool_size > 0:
+            self.num_imgs = 0
+            self.images = []
+
+    def query(self, images):
+        if self.pool_size == 0:
+            return images
+        return_images = []
+        for image in images:
+            image = torch.unsqueeze(image.data, 0)
+            if self.num_imgs < self.pool_size:
+                self.num_imgs = self.num_imgs + 1
+                self.images.append(image)
+                return_images.append(image)
+            else:
+                p = random.uniform(0, 1)
+                if p > 0.5:
+                    random_id = random.randint(0, self.pool_size - 1)  # randint is inclusive
+                    tmp = self.images[random_id].clone()
+                    self.images[random_id] = image
+                    return_images.append(tmp)
+                else:
+                    return_images.append(image)
+        return_images = torch.cat(return_images, 0)
+        return return_images
 
 class CycleGANModel():
     def name(self):
         return 'CycleGANModel'
-
-    # print network information
-    def print_networks(self, verbose):
-        print('---------- Networks initialized -------------')
-        for name in self.model_names:
-            if isinstance(name, str):
-                net = getattr(self, 'net' + name)
-                num_params = 0
-                for param in net.parameters():
-                    num_params += param.numel()
-                if verbose:
-                    print(net)
-                print('[Network %s] Total number of parameters : %.3f M' % (name, num_params / 1e6))
-        print('-----------------------------------------------')
-
-    # set requies_grad=Fasle to avoid computation
-    def set_requires_grad(self, nets, requires_grad=False):
-        if not isinstance(nets, list):
-            nets = [nets]
-        for net in nets:
-            if net is not None:
-                for param in net.parameters():
-                    param.requires_grad = requires_grad
 
     @staticmethod
     def modify_commandline_options(parser, is_train=True):
@@ -44,33 +49,32 @@ class CycleGANModel():
 
         return parser
 
+
     # load and print networks; create schedulers
-    def setup(self, opt, parser=None):
+    def setup(self, parser=None):
         if self.isTrain:
-            self.schedulers = [gan_net.get_scheduler(optimizer, opt) for optimizer in self.optimizers]
+            self.schedulers = [gan_net.get_scheduler(optimizer) for optimizer in self.optimizers]
 
-        if not self.isTrain or opt.continue_train:
-            self.load_networks(opt.which_epoch)
-        self.print_networks(opt.verbose)
+        if not self.isTrain:
+            self.load_networks('latest')
 
-    def initialize(self, isTrain=True, name='market-c1-c2'):
+    def initialize(self, opt):
         self.gpu_ids = 0
-        self.device = self.gpu_ids
-        self.isTrain = isTrain
-        self.save_dir = os.path.join('./checkpoints', name)
-        torch.backends.cudnn.benchmark = True
+        self.isTrain = opt.isTrain
+        self.device = torch.device('cuda:{}'.format(self.gpu_ids[0])) if self.gpu_ids else torch.device('cpu')
+        self.save_dir = os.path.join('./checkpoints', 'experiment_name')
         self.loss_names = []
         self.model_names = []
         self.visual_names = []
         self.image_paths = []
-        self.lambda_identity = 0.5
+
 
         # specify the training losses you want to print out. The program will call base_model.get_current_losses
         self.loss_names = ['D_A', 'G_A', 'cycle_A', 'idt_A', 'D_B', 'G_B', 'cycle_B', 'idt_B']
         # specify the images you want to save/display. The program will call base_model.get_current_visuals
         visual_names_A = ['real_A', 'fake_B', 'rec_A']
         visual_names_B = ['real_B', 'fake_A', 'rec_B']
-        if self.isTrain and self.lambda_identity > 0.0:
+        if self.isTrain :
             visual_names_A.append('idt_A')
             visual_names_B.append('idt_B')
 
@@ -84,38 +88,38 @@ class CycleGANModel():
         # load/define networks
         # The naming conversion is different from those used in the paper
         # Code (paper): G_A (G), G_B (F), D_A (D_Y), D_B (D_X)
-        self.netG_A = gan_net.define_G(3, 3, 64, 'resnet_9blocks', 'instance', not opt.no_dropout, opt.init_type,
-                                       self.gpu_ids)
-        self.netG_B = gan_net.define_G(3, 3, 64, 'resnet_9blocks', 'instance', not opt.no_dropout, opt.init_type,
-                                       self.gpu_ids)
+        self.netG_A = gan_net.define_G(3, 3,
+                                        64, 'resnet_9blocks', 'instance', True, 'normal', self.gpu_ids)
+        self.netG_B = gan_net.define_G(3, 3,
+                                        64, 'resnet_9blocks', 'instance', True, 'normal', self.gpu_ids)
 
         if self.isTrain:
-            use_sigmoid = opt.no_lsgan
+            use_sigmoid = False
             self.netD_A = gan_net.define_D(3, 64,
-                                           opt.which_model_netD,
-                                           opt.n_layers_D, 'instance', use_sigmoid, opt.init_type, self.gpu_ids)
+                                            'basic',
+                                            3, 'instance', use_sigmoid, 'normal', self.gpu_ids)
             self.netD_B = gan_net.define_D(3, 64,
-                                           opt.which_model_netD,
-                                           opt.n_layers_D, 'instance', use_sigmoid, opt.init_type, self.gpu_ids)
+                                            'basic',
+                                            3, 'instance', use_sigmoid, 'normal', self.gpu_ids)
 
         if self.isTrain:
-            self.fake_A_pool = ImagePool(opt.pool_size)
-            self.fake_B_pool = ImagePool(opt.pool_size)
+            self.fake_A_pool = ImagePool(50)
+            self.fake_B_pool = ImagePool(50)
             # define loss functions
-            self.criterionGAN = gan_net.GANLoss(use_lsgan=not opt.no_lsgan).to(self.device)
+            self.criterionGAN = gan_net.GANLoss(use_lsgan=True).to(self.device)
             self.criterionCycle = torch.nn.L1Loss()
             self.criterionIdt = torch.nn.L1Loss()
             # initialize optimizers
             self.optimizer_G = torch.optim.Adam(itertools.chain(self.netG_A.parameters(), self.netG_B.parameters()),
-                                                lr=opt.lr, betas=(opt.beta1, 0.999))
+                                                lr=0.0002, betas=(0.5, 0.999))
             self.optimizer_D = torch.optim.Adam(itertools.chain(self.netD_A.parameters(), self.netD_B.parameters()),
-                                                lr=opt.lr, betas=(opt.beta1, 0.999))
+                                                lr=0.0002, betas=(0.5, 0.999))
             self.optimizers = []
             self.optimizers.append(self.optimizer_G)
             self.optimizers.append(self.optimizer_D)
 
     def set_input(self, input):
-        AtoB = self.opt.which_direction == 'AtoB'
+        AtoB = True
         self.real_A = input['A' if AtoB else 'B'].to(self.device)
         self.real_B = input['B' if AtoB else 'A'].to(self.device)
         self.image_paths = input['A_paths' if AtoB else 'B_paths']
@@ -149,9 +153,9 @@ class CycleGANModel():
         self.loss_D_B = self.backward_D_basic(self.netD_B, self.real_A, fake_A)
 
     def backward_G(self):
-        lambda_idt = self.opt.lambda_identity
-        lambda_A = self.opt.lambda_A
-        lambda_B = self.opt.lambda_B
+        lambda_idt = 0.5
+        lambda_A = 10.0
+        lambda_B = 10.0
         # Identity loss
         if lambda_idt > 0:
             # G_A should be identity if real_B is fed.
@@ -246,13 +250,11 @@ class CycleGANModel():
                 net = getattr(self, 'net' + name)
                 net.eval()
 
-
 def get_option_setter(model_name):
     return CycleGANModel.modify_commandline_options
 
-
-def create_model(isTrain, name):
+def create_model(opt):
     instance = CycleGANModel()
-    instance.initialize(isTrain, name)
+    instance.initialize(opt)
     print("model [%s] was created" % (instance.name()))
     return instance
