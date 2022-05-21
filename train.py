@@ -12,7 +12,7 @@ if __name__ == '__main__':
 
     model = create_model(True, 'market-c1-c2')
     model.setup()
-    visualizer = Visualizer(opt)
+    visualizer = Visualizer()
     total_steps = 0
 
     for epoch in range(1, 51):    # outer loop for different epochs

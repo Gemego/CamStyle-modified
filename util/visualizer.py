@@ -145,8 +145,7 @@ class Visualizer:
                     self.vis.text(table_css + label_html, win=self.display_id + 2,
                                   opts=dict(title=title + ' labels'))
                 except ConnectionError:
-                    print(
-                        '\n\nCould not connect to Visdom server (https://github.com/facebookresearch/visdom) for displaying training progress.\nYou can suppress connection to Visdom using the option --display_id -1. To install visdom, run \n$ pip install visdom\n, and start the server by \n$ python -m visdom.server.\n\n')
+                    print('Could not connect to Visdom server.')
                     exit(1)
 
             else:

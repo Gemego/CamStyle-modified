@@ -59,11 +59,11 @@ class CycleGANModel:
         if not self.isTrain:
             self.load_networks('latest')
 
-    def initialize(self, opt):
+    def initialize(self, isTrain=True, name='experiment_name'):
         self.gpu_ids = 0
-        self.isTrain = opt.isTrain
+        self.isTrain = isTrain
         self.device = self.gpu_ids
-        self.save_dir = os.path.join('./checkpoints', 'experiment_name')
+        self.save_dir = os.path.join('./checkpoints', name)
         self.loss_names = []
         self.model_names = []
         self.visual_names = []
@@ -255,8 +255,8 @@ def get_option_setter(model_name):
     return CycleGANModel.modify_commandline_options
 
 
-def create_model(opt):
+def create_model(isTrain, name):
     instance = CycleGANModel()
-    instance.initialize(opt)
+    instance.initialize(isTrain, name)
     print("model [%s] was created" % (instance.name()))
     return instance
