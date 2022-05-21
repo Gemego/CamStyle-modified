@@ -1,10 +1,9 @@
 import numpy as np
+import torch
 import os
 import ntpath
 import time
-from . import util
-from . import html
-from scipy.misc import imresize
+from PIL import Image
 import errno
 
 
@@ -15,6 +14,36 @@ def mkdir_if_missing(dir_path):
     except OSError as e:
         if e.errno != errno.EEXIST:
             raise
+
+
+def mkdirs(paths):
+    if isinstance(paths, list) and not isinstance(paths, str):
+        for path in paths:
+            mkdir(path)
+    else:
+        mkdir(paths)
+
+
+def mkdir(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+
+def tensor2im(input_image, imtype=np.uint8):
+    if isinstance(input_image, torch.Tensor):
+        image_tensor = input_image.data
+    else:
+        return input_image
+    image_numpy = image_tensor[0].cpu().float().numpy()
+    if image_numpy.shape[0] == 1:
+        image_numpy = np.tile(image_numpy, (3, 1, 1))
+    image_numpy = (np.transpose(image_numpy, (1, 2, 0)) + 1) / 2.0 * 255.0
+    return image_numpy.astype(imtype)
+
+
+def save_image(image_numpy, image_path):
+    image_pil = Image.fromarray(image_numpy)
+    image_pil.save(image_path)
 
 
 # save image to the disk
@@ -28,7 +57,7 @@ def save_images(visuals, image_path, camA=1, camB=2, save_root=None):
     links = []
 
     for label, im_data in visuals.items():
-        im = util.tensor2im(im_data)
+        im = tensor2im(im_data)
         if label in ('rec_A', 'rec_B', 'real_A', 'real_B'):
             continue
         import re
@@ -45,7 +74,7 @@ def save_images(visuals, image_path, camA=1, camB=2, save_root=None):
 
         image_name = '%s_%s.jpg' % (name, label)
         save_path = os.path.join(save_root, image_name)
-        util.save_image(im, save_path)
+        save_image(im, save_path)
 
         ims.append(image_name)
         txts.append(label)
@@ -56,21 +85,20 @@ class Visualizer:
     def __init__(self, isTrain=True):
         self.display_id = 1
         self.use_html = isTrain
-        self.win_size = opt.display_winsize
-        self.name = opt.name
-        self.opt = opt
+        self.win_size = 256
+        self.name = 'experiment_name'
         self.saved = False
         if self.display_id > 0:
             import visdom
-            self.ncols = opt.display_ncols
-            self.vis = visdom.Visdom(server=opt.display_server, port=opt.display_port)
+            self.ncols = 0
+            self.vis = visdom.Visdom(server="http://localhost", port=8097)
 
         if self.use_html:
-            self.web_dir = os.path.join(opt.checkpoints_dir, opt.name, 'web')
+            self.web_dir = os.path.join('./checkpoints', 'experiment_name', 'web')
             self.img_dir = os.path.join(self.web_dir, 'images')
             print('create web directory %s...' % self.web_dir)
-            util.mkdirs([self.web_dir, self.img_dir])
-        self.log_name = os.path.join(opt.checkpoints_dir, opt.name, 'loss_log.txt')
+            mkdirs([self.web_dir, self.img_dir])
+        self.log_name = os.path.join('./checkpoints', 'experiment_name', 'loss_log.txt')
         with open(self.log_name, "a") as log_file:
             now = time.strftime("%c")
             log_file.write('================ Training Loss (%s) ================\n' % now)
@@ -95,7 +123,7 @@ class Visualizer:
                 images = []
                 idx = 0
                 for label, image in visuals.items():
-                    image_numpy = util.tensor2im(image)
+                    image_numpy = tensor2im(image)
                     label_html_row += '<td>%s</td>' % label
                     images.append(image_numpy.transpose([2, 0, 1]))
                     idx += 1
@@ -124,34 +152,13 @@ class Visualizer:
             else:
                 idx = 1
                 for label, image in visuals.items():
-                    image_numpy = util.tensor2im(image)
+                    image_numpy = tensor2im(image)
                     self.vis.image(image_numpy.transpose([2, 0, 1]), opts=dict(title=label),
                                    win=self.display_id + idx)
                     idx += 1
 
-        if self.use_html and (save_result or not self.saved):  # save images to a html file
-            self.saved = True
-            for label, image in visuals.items():
-                image_numpy = util.tensor2im(image)
-                img_path = os.path.join(self.img_dir, 'epoch%.3d_%s.png' % (epoch, label))
-                util.save_image(image_numpy, img_path)
-            # update website
-            webpage = html.HTML(self.web_dir, 'Experiment name = %s' % self.name, reflesh=1)
-            for n in range(epoch, 0, -1):
-                webpage.add_header('epoch [%d]' % n)
-                ims, txts, links = [], [], []
-
-                for label, image_numpy in visuals.items():
-                    image_numpy = util.tensor2im(image)
-                    img_path = 'epoch%.3d_%s.png' % (n, label)
-                    ims.append(img_path)
-                    txts.append(label)
-                    links.append(img_path)
-                webpage.add_images(ims, txts, links, width=self.win_size)
-            webpage.save()
-
     # losses: dictionary of error labels and values
-    def plot_current_losses(self, epoch, counter_ratio, opt, losses):
+    def plot_current_losses(self, epoch, counter_ratio, losses):
         if not hasattr(self, 'plot_data'):
             self.plot_data = {'X': [], 'Y': [], 'legend': list(losses.keys())}
         self.plot_data['X'].append(epoch + counter_ratio)
