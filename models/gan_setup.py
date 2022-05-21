@@ -65,19 +65,13 @@ class CycleGANModel:
         # load/define networks
         # The naming conversion is different from those used in the paper
         # Code (paper): G_A (G), G_B (F), D_A (D_Y), D_B (D_X)
-        self.netG_A = gan_net.define_G(3, 3,
-                                       64, 'resnet_9blocks', 'instance', True, 'normal', self.gpu_ids)
-        self.netG_B = gan_net.define_G(3, 3,
-                                       64, 'resnet_9blocks', 'instance', True, 'normal', self.gpu_ids)
+        self.netG_A = gan_net.define_G(3, 3, 64, 'resnet_9blocks', 'instance', True, 'normal', self.gpu_ids)
+        self.netG_B = gan_net.define_G(3, 3, 64, 'resnet_9blocks', 'instance', True, 'normal', self.gpu_ids)
 
         if self.isTrain:
             use_sigmoid = False
-            self.netD_A = gan_net.define_D(3, 64,
-                                           'basic',
-                                           3, 'instance', use_sigmoid, 'normal', self.gpu_ids)
-            self.netD_B = gan_net.define_D(3, 64,
-                                           'basic',
-                                           3, 'instance', use_sigmoid, 'normal', self.gpu_ids)
+            self.netD_A = gan_net.define_D(3, 64, 'basic', 3, 'instance', use_sigmoid, 'normal', self.gpu_ids)
+            self.netD_B = gan_net.define_D(3, 64, 'basic', 3, 'instance', use_sigmoid, 'normal', self.gpu_ids)
 
         if self.isTrain:
             self.fake_A_pool = ImagePool(50)
@@ -282,7 +276,7 @@ class CycleGANModel:
                 net.eval()
 
 
-def get_option_setter(model_name):
+def get_option_setter():
     return CycleGANModel.modify_commandline_options
 
 
