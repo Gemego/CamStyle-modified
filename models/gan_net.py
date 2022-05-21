@@ -12,8 +12,9 @@ def get_norm_layer(norm_type='instance'):
 
 def get_scheduler(optimizer):
     def lambda_rule(epoch):
-        lr_l = 1.0 - max(0, epoch -28) / float(21)
+        lr_l = 1.0 - max(0, epoch - 28) / float(21)
         return lr_l
+
     scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda_rule)
     return scheduler
 
@@ -35,14 +36,15 @@ def init_weights(net, init_type='normal', gain=0.02):
 
 def init_net(net, init_type='normal', gpu_ids=[]):
     if len(gpu_ids) > 0:
-        assert(torch.cuda.is_available())
+        assert (torch.cuda.is_available())
         net.to(gpu_ids[0])
         net = torch.nn.DataParallel(net, gpu_ids)
     init_weights(net, init_type)
     return net
 
 
-def define_G(input_nc, output_nc, ngf, which_model_netG, norm='batch', use_dropout=False, init_type='normal', gpu_ids=[]):
+def define_G(input_nc, output_nc, ngf, which_model_netG, norm='batch', use_dropout=False, init_type='normal',
+             gpu_ids=[]):
     netG = None
     norm_layer = get_norm_layer(norm_type=norm)
 
@@ -50,13 +52,14 @@ def define_G(input_nc, output_nc, ngf, which_model_netG, norm='batch', use_dropo
     return init_net(netG, init_type, gpu_ids)
 
 
-def define_D(input_nc, ndf, which_model_netD,
-             n_layers_D=3, norm='batch', use_sigmoid=False, init_type='normal', gpu_ids=[]):
+def define_D(input_nc, ndf, which_model_netD, n_layers_D=3, norm='batch', use_sigmoid=False, init_type='normal',
+             gpu_ids=[]):
     netD = None
     norm_layer = get_norm_layer(norm_type=norm)
 
     netD = NLayerDiscriminator(input_nc, ndf, n_layers=3, norm_layer=norm_layer, use_sigmoid=use_sigmoid)
     return init_net(netD, init_type, gpu_ids)
+
 
 class GANLoss(nn.Module):
     def __init__(self, use_lsgan=True, target_real_label=1.0, target_fake_label=0.0):
@@ -78,7 +81,6 @@ class GANLoss(nn.Module):
     def __call__(self, input, target_is_real):
         target_tensor = self.get_target_tensor(input, target_is_real)
         return self.loss(input, target_tensor)
-
 
 
 # Define a resnet block
@@ -123,11 +125,13 @@ class ResnetBlock(nn.Module):
         out = x + self.conv_block(x)
         return out
 
+
 # Defines the generator that consists of Resnet blocks between a few
 # downsampling/upsampling operations.
 class ResnetGenerator(nn.Module):
-    def __init__(self, input_nc, output_nc, ngf=64, norm_layer=nn.BatchNorm2d, use_dropout=False, n_blocks=6, padding_type='reflect'):
-        assert(n_blocks >= 0)
+    def __init__(self, input_nc, output_nc, ngf=64, norm_layer=nn.BatchNorm2d, use_dropout=False, n_blocks=6,
+                 padding_type='reflect'):
+        assert (n_blocks >= 0)
         super(ResnetGenerator, self).__init__()
         self.input_nc = input_nc
         self.output_nc = output_nc
@@ -145,18 +149,19 @@ class ResnetGenerator(nn.Module):
 
         n_downsampling = 2
         for i in range(n_downsampling):
-            mult = 2**i
+            mult = 2 ** i
             model += [nn.Conv2d(ngf * mult, ngf * mult * 2, kernel_size=3,
                                 stride=2, padding=1, bias=use_bias),
                       norm_layer(ngf * mult * 2),
                       nn.ReLU(True)]
 
-        mult = 2**n_downsampling
+        mult = 2 ** n_downsampling
         for i in range(n_blocks):
-            model += [ResnetBlock(ngf * mult, padding_type=padding_type, norm_layer=norm_layer, use_dropout=use_dropout, use_bias=use_bias)]
+            model += [ResnetBlock(ngf * mult, padding_type=padding_type, norm_layer=norm_layer, use_dropout=use_dropout,
+                                  use_bias=use_bias)]
 
         for i in range(n_downsampling):
-            mult = 2**(n_downsampling - i)
+            mult = 2 ** (n_downsampling - i)
             model += [nn.ConvTranspose2d(ngf * mult, int(ngf * mult / 2),
                                          kernel_size=3, stride=2,
                                          padding=1, output_padding=1,
@@ -171,6 +176,7 @@ class ResnetGenerator(nn.Module):
 
     def forward(self, input):
         return self.model(input)
+
 
 # Defines the PatchGAN discriminator with the specified arguments.
 class NLayerDiscriminator(nn.Module):
@@ -192,7 +198,7 @@ class NLayerDiscriminator(nn.Module):
         nf_mult_prev = 1
         for n in range(1, n_layers):
             nf_mult_prev = nf_mult
-            nf_mult = min(2**n, 8)
+            nf_mult = min(2 ** n, 8)
             sequence += [
                 nn.Conv2d(ndf * nf_mult_prev, ndf * nf_mult,
                           kernel_size=kw, stride=2, padding=padw, bias=use_bias),
@@ -201,7 +207,7 @@ class NLayerDiscriminator(nn.Module):
             ]
 
         nf_mult_prev = nf_mult
-        nf_mult = min(2**n_layers, 8)
+        nf_mult = min(2 ** n_layers, 8)
         sequence += [
             nn.Conv2d(ndf * nf_mult_prev, ndf * nf_mult,
                       kernel_size=kw, stride=1, padding=padw, bias=use_bias),
@@ -218,4 +224,3 @@ class NLayerDiscriminator(nn.Module):
 
     def forward(self, input):
         return self.model(input)
-
