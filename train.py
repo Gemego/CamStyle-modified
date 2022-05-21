@@ -1,5 +1,4 @@
 import time
-from options.train_options import TrainOptions
 from data import DatasetDataLoader
 from models.gan_setup import create_model
 from util.visualizer import Visualizer
