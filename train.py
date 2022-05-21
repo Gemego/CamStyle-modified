@@ -10,35 +10,34 @@ if __name__ == '__main__':
     dataset_size = len(data_loader)
     print('#training images = %d' % dataset_size)
 
-    opt = TrainOptions().parse()
-
     model = create_model(True, 'market-c1-c2')
-    model.setup(opt)
+    model.setup()
     visualizer = Visualizer(opt)
     total_steps = 0
 
-    for epoch in range(opt.epoch_count, opt.niter + opt.niter_decay + 1):    # outer loop for different epochs
+    for epoch in range(1, 51):    # outer loop for different epochs
         epoch_start_time = time.time()
         iter_data_time = time.time()
         epoch_iter = 0
 
+        t_data = 0
         for i, data in enumerate(dataset):    # inner loop within one epoch
             iter_start_time = time.time()
-            if total_steps % opt.print_freq == 0:
+            if total_steps % 100 == 0:
                 t_data = iter_start_time - iter_data_time
             visualizer.reset()
-            total_steps += opt.batchSize
-            epoch_iter += opt.batchSize
+            total_steps += 1
+            epoch_iter += 1
             model.set_input(data)
             model.optimize_parameters()
 
-            if total_steps % opt.display_freq == 0:     # display images on visdom and save images to a HTML file
-                save_result = total_steps % opt.update_html_freq == 0
+            if total_steps % 400 == 0:     # display images on visdom and save images to a HTML file
+                save_result = total_steps % 1000 == 0
                 visualizer.display_current_results(model.get_current_visuals(), epoch, save_result)
 
-            if total_steps % opt.print_freq == 0:      # print training losses and save logging information to the disk
+            if total_steps % 100 == 0:      # print training losses and save logging information to the disk
                 losses = model.get_current_losses()
-                t = (time.time() - iter_start_time) / opt.batchSize
+                t = (time.time() - iter_start_time) / 1
                 visualizer.print_current_losses(epoch, epoch_iter, losses, t, t_data)
                 if opt.display_id > 0:
                     visualizer.plot_current_losses(epoch, float(epoch_iter) / dataset_size, opt, losses)
