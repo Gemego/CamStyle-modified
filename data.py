@@ -13,13 +13,13 @@ FINE_SIZE = 256
 
 
 class ReidDataset(data.Dataset):
-    def __init__(self):
+    def __init__(self, camA, camB):
         self.serial_batches = True
         self.root = DATA_ROOT
         self.dir = os.path.join(self.root, 'bounding_box_train')
 
-        self.A_paths = self.preprocess(self.dir, cam_id=1)
-        self.B_paths = self.preprocess(self.dir, cam_id=2)
+        self.A_paths = self.preprocess(self.dir, cam_id=camA)
+        self.B_paths = self.preprocess(self.dir, cam_id=camB)
 
         self.A_size = len(self.A_paths)
         self.B_size = len(self.B_paths)
@@ -80,8 +80,8 @@ class ReidDataset(data.Dataset):
 
 
 class DatasetDataLoader(data.Dataset):
-    def __init__(self):
-        self.dataset = ReidDataset()
+    def __init__(self, camA=1, camB=2):
+        self.dataset = ReidDataset(camA, camB)
         self.dataloader = data.DataLoader(
             self.dataset,
             batch_size=1,
@@ -95,5 +95,5 @@ class DatasetDataLoader(data.Dataset):
         return len(self.dataset)
 
     def __iter__(self):
-        for i, data in enumerate(self.dataloader):
-            yield data
+        for _, _data in enumerate(self.dataloader):
+            yield _data

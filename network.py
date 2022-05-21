@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-import torch
+
 import torch.nn as nn
-from torch.nn import init
 import functools
-from torch.optim import lr_scheduler
 
 class ResnetBlock(nn.Module):
     def __init__(self, dim, padding_type, norm_layer, use_dropout, use_bias):
