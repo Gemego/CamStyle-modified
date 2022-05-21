@@ -52,10 +52,10 @@ def save_images(visuals, image_path, camA=1, camB=2, save_root=None):
         links.append(image_name)
 
 
-class Visualizer():
-    def __init__(self, opt):
-        self.display_id = opt.display_id
-        self.use_html = opt.isTrain and not opt.no_html
+class Visualizer:
+    def __init__(self, isTrain=True):
+        self.display_id = 1
+        self.use_html = isTrain
         self.win_size = opt.display_winsize
         self.name = opt.name
         self.opt = opt

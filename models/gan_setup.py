@@ -5,6 +5,7 @@ import itertools
 from collections import OrderedDict
 from . import gan_net
 
+
 class ImagePool():
     def __init__(self, pool_size):
         self.pool_size = pool_size
@@ -34,7 +35,8 @@ class ImagePool():
         return_images = torch.cat(return_images, 0)
         return return_images
 
-class CycleGANModel():
+
+class CycleGANModel:
     def name(self):
         return 'CycleGANModel'
 
@@ -49,7 +51,6 @@ class CycleGANModel():
 
         return parser
 
-
     # load and print networks; create schedulers
     def setup(self, parser=None):
         if self.isTrain:
@@ -61,20 +62,19 @@ class CycleGANModel():
     def initialize(self, opt):
         self.gpu_ids = 0
         self.isTrain = opt.isTrain
-        self.device = torch.device('cuda:{}'.format(self.gpu_ids[0])) if self.gpu_ids else torch.device('cpu')
+        self.device = self.gpu_ids
         self.save_dir = os.path.join('./checkpoints', 'experiment_name')
         self.loss_names = []
         self.model_names = []
         self.visual_names = []
         self.image_paths = []
 
-
         # specify the training losses you want to print out. The program will call base_model.get_current_losses
         self.loss_names = ['D_A', 'G_A', 'cycle_A', 'idt_A', 'D_B', 'G_B', 'cycle_B', 'idt_B']
         # specify the images you want to save/display. The program will call base_model.get_current_visuals
         visual_names_A = ['real_A', 'fake_B', 'rec_A']
         visual_names_B = ['real_B', 'fake_A', 'rec_B']
-        if self.isTrain :
+        if self.isTrain:
             visual_names_A.append('idt_A')
             visual_names_B.append('idt_B')
 
@@ -89,18 +89,18 @@ class CycleGANModel():
         # The naming conversion is different from those used in the paper
         # Code (paper): G_A (G), G_B (F), D_A (D_Y), D_B (D_X)
         self.netG_A = gan_net.define_G(3, 3,
-                                        64, 'resnet_9blocks', 'instance', True, 'normal', self.gpu_ids)
+                                       64, 'resnet_9blocks', 'instance', True, 'normal', self.gpu_ids)
         self.netG_B = gan_net.define_G(3, 3,
-                                        64, 'resnet_9blocks', 'instance', True, 'normal', self.gpu_ids)
+                                       64, 'resnet_9blocks', 'instance', True, 'normal', self.gpu_ids)
 
         if self.isTrain:
             use_sigmoid = False
             self.netD_A = gan_net.define_D(3, 64,
-                                            'basic',
-                                            3, 'instance', use_sigmoid, 'normal', self.gpu_ids)
+                                           'basic',
+                                           3, 'instance', use_sigmoid, 'normal', self.gpu_ids)
             self.netD_B = gan_net.define_D(3, 64,
-                                            'basic',
-                                            3, 'instance', use_sigmoid, 'normal', self.gpu_ids)
+                                           'basic',
+                                           3, 'instance', use_sigmoid, 'normal', self.gpu_ids)
 
         if self.isTrain:
             self.fake_A_pool = ImagePool(50)
@@ -250,8 +250,10 @@ class CycleGANModel():
                 net = getattr(self, 'net' + name)
                 net.eval()
 
+
 def get_option_setter(model_name):
     return CycleGANModel.modify_commandline_options
+
 
 def create_model(opt):
     instance = CycleGANModel()
