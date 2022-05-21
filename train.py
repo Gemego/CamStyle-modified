@@ -39,7 +39,7 @@ if __name__ == '__main__':
                 t = (time.time() - iter_start_time) / 1
                 visualizer.print_current_losses(epoch, epoch_iter, losses, t, t_data)
                 if 1 > 0:
-                    visualizer.plot_current_losses(epoch, float(epoch_iter) / dataset_size, opt, losses)
+                    visualizer.plot_current_losses(epoch, float(epoch_iter) / dataset_size, losses)
 
             if total_steps % 5000 == 0:     # cache the latest model every <save_latest_freq> iterations
                 print('saving the latest model (epoch %d, total_steps %d)' %
