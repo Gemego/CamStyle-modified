@@ -12,7 +12,7 @@ if __name__ == '__main__':
 
     opt = TrainOptions().parse()
 
-    model = create_model(opt)
+    model = create_model(True, 'market-c1-c2')
     model.setup(opt)
     visualizer = Visualizer(opt)
     total_steps = 0

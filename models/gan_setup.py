@@ -44,7 +44,6 @@ class CycleGANModel():
 
         return parser
 
-
     # load and print networks; create schedulers
     def setup(self, opt, parser=None):
         if self.isTrain:
@@ -54,26 +53,24 @@ class CycleGANModel():
             self.load_networks(opt.which_epoch)
         self.print_networks(opt.verbose)
 
-    def initialize(self, opt):
-        self.opt = opt
-        self.gpu_ids = opt.gpu_ids
-        self.isTrain = opt.isTrain
-        self.device = torch.device('cuda:{}'.format(self.gpu_ids[0])) if self.gpu_ids else torch.device('cpu')
-        self.save_dir = os.path.join(opt.checkpoints_dir, opt.name)
-        if opt.resize_or_crop != 'scale_width':
-            torch.backends.cudnn.benchmark = True
+    def initialize(self, isTrain=True, name='market-c1-c2'):
+        self.gpu_ids = 0
+        self.device = self.gpu_ids
+        self.isTrain = isTrain
+        self.save_dir = os.path.join('./checkpoints', name)
+        torch.backends.cudnn.benchmark = True
         self.loss_names = []
         self.model_names = []
         self.visual_names = []
         self.image_paths = []
-
+        self.lambda_identity = 0.5
 
         # specify the training losses you want to print out. The program will call base_model.get_current_losses
         self.loss_names = ['D_A', 'G_A', 'cycle_A', 'idt_A', 'D_B', 'G_B', 'cycle_B', 'idt_B']
         # specify the images you want to save/display. The program will call base_model.get_current_visuals
         visual_names_A = ['real_A', 'fake_B', 'rec_A']
         visual_names_B = ['real_B', 'fake_A', 'rec_B']
-        if self.isTrain and self.opt.lambda_identity > 0.0:
+        if self.isTrain and self.lambda_identity > 0.0:
             visual_names_A.append('idt_A')
             visual_names_B.append('idt_B')
 
@@ -87,19 +84,19 @@ class CycleGANModel():
         # load/define networks
         # The naming conversion is different from those used in the paper
         # Code (paper): G_A (G), G_B (F), D_A (D_Y), D_B (D_X)
-        self.netG_A = gan_net.define_G(opt.input_nc, opt.output_nc,
-                                        opt.ngf, opt.which_model_netG, opt.norm, not opt.no_dropout, opt.init_type, self.gpu_ids)
-        self.netG_B = gan_net.define_G(opt.output_nc, opt.input_nc,
-                                        opt.ngf, opt.which_model_netG, opt.norm, not opt.no_dropout, opt.init_type, self.gpu_ids)
+        self.netG_A = gan_net.define_G(3, 3, 64, 'resnet_9blocks', 'instance', not opt.no_dropout, opt.init_type,
+                                       self.gpu_ids)
+        self.netG_B = gan_net.define_G(3, 3, 64, 'resnet_9blocks', 'instance', not opt.no_dropout, opt.init_type,
+                                       self.gpu_ids)
 
         if self.isTrain:
             use_sigmoid = opt.no_lsgan
-            self.netD_A = gan_net.define_D(opt.output_nc, opt.ndf,
-                                            opt.which_model_netD,
-                                            opt.n_layers_D, opt.norm, use_sigmoid, opt.init_type, self.gpu_ids)
-            self.netD_B = gan_net.define_D(opt.input_nc, opt.ndf,
-                                            opt.which_model_netD,
-                                            opt.n_layers_D, opt.norm, use_sigmoid, opt.init_type, self.gpu_ids)
+            self.netD_A = gan_net.define_D(3, 64,
+                                           opt.which_model_netD,
+                                           opt.n_layers_D, 'instance', use_sigmoid, opt.init_type, self.gpu_ids)
+            self.netD_B = gan_net.define_D(3, 64,
+                                           opt.which_model_netD,
+                                           opt.n_layers_D, 'instance', use_sigmoid, opt.init_type, self.gpu_ids)
 
         if self.isTrain:
             self.fake_A_pool = ImagePool(opt.pool_size)
@@ -249,11 +246,13 @@ class CycleGANModel():
                 net = getattr(self, 'net' + name)
                 net.eval()
 
+
 def get_option_setter(model_name):
     return CycleGANModel.modify_commandline_options
 
-def create_model(opt):
+
+def create_model(isTrain, name):
     instance = CycleGANModel()
-    instance.initialize(opt)
+    instance.initialize(isTrain, name)
     print("model [%s] was created" % (instance.name()))
     return instance
