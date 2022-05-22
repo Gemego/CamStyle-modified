@@ -3,6 +3,11 @@ from data import DatasetDataLoader
 from models.gan_setup import create_model
 from util.visualizer import Visualizer
 
+
+def train_specify():
+    pass
+
+
 if __name__ == '__main__':
     data_loader = DatasetDataLoader()
     dataset = data_loader.load_data()

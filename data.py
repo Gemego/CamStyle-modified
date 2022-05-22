@@ -8,27 +8,27 @@ from glob import glob
 import re
 
 # DATA_ROOT = "D:\\智能计算系统\\Market-1501-v15.09.15\\Market-1501-v15.09.15"
-DATA_ROOT =r"D:\AICS_final\CamStyle-master\CycleGAN-for-CamStyle\data\market"
+DATA_ROOT = r"D:\AICS_final\CamStyle-master\CycleGAN-for-CamStyle\data\market"
 LOAD_SIZE = 286
 FINE_SIZE = 256
 
 
 class ReidDataset(data.Dataset):
-    def __init__(self, camA, camB,isTrain): # wsy :add isTrain
+    def __init__(self, camA, camB, isTrain):  # wsy :add isTrain
         self.serial_batches = True
         self.root = DATA_ROOT
         self.dir = os.path.join(self.root, 'bounding_box_train')
-        #-------------------wsy------------------------------------------
+        # -------------------wsy------------------------------------------
         # self.A_paths = self.preprocess(self.dir, cam_id=camA)
         # self.B_paths = self.preprocess(self.dir, cam_id=camB)
-        self.isTrain=isTrain # 便于后续其他函数使用
+        self.isTrain = isTrain  # 便于后续其他函数使用
         if self.isTrain:
             self.A_paths = self.preprocess(self.dir, cam_id=camA)
             self.B_paths = self.preprocess(self.dir, cam_id=camB)
         else:
             self.A_paths = self.preprocess(self.dir, cam_id=camA, extra_cam_id=camB)
             self.B_paths = self.preprocess(self.dir, cam_id=camA, extra_cam_id=camB)
-        #----------------------------------------------------------------
+        # ----------------------------------------------------------------
         self.A_size = len(self.A_paths)
         self.B_size = len(self.B_paths)
 
@@ -41,10 +41,10 @@ class ReidDataset(data.Dataset):
         transform_list.append(transforms.Resize(osize, pil.Image.BICUBIC))
         transform_list.append(transforms.RandomCrop(FINE_SIZE))
 
-        #---------wsy---------------------这里与text无关，但好像与train有关，可以看看是否是加漏了
+        # ---------wsy---------------------这里与text无关，但好像与train有关，可以看看是否是加漏了
         # if opt.isTrain and not opt.no_flip:
         #     transform_list.append(transforms.RandomHorizontalFlip())
-        #-----------------------------------
+        # -----------------------------------
         transform_list += [transforms.ToTensor(),
                            transforms.Normalize((0.5, 0.5, 0.5),
                                                 (0.5, 0.5, 0.5))]
@@ -92,8 +92,8 @@ class ReidDataset(data.Dataset):
 
 
 class DatasetDataLoader(data.Dataset):
-    def __init__(self, camA=1, camB=2,isTrain=True): # wsy :此处设置为train,则train.py不用改
-        self.dataset = ReidDataset(camA, camB,isTrain) # wsy
+    def __init__(self, camA=1, camB=2, isTrain=True):  # wsy :此处设置为train,则train.py不用改
+        self.dataset = ReidDataset(camA, camB, isTrain)  # wsy
         self.dataloader = data.DataLoader(
             self.dataset,
             batch_size=1,
