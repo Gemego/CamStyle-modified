@@ -92,6 +92,7 @@ class Visualizer:
             import visdom
             self.ncols = 0
             self.vis = visdom.Visdom(server="http://localhost", port=8097)
+            # self.vis = visdom.Visdom(server="http://localhost", port=4321) # wsy 
 
         if self.use_html:
             self.web_dir = os.path.join('./checkpoints', 'experiment_name', 'web')

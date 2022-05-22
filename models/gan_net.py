@@ -120,6 +120,8 @@ class ResnetBlock(nn.Module):
         return nn.Sequential(*conv_block)
 
     def forward(self, x):
+        if hasattr(torch.cuda, 'empty_cache'): # wsy 清除无用的内存
+            torch.cuda.empty_cache()
         out = x + self.conv_block(x)
         return out
 
