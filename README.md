@@ -2,7 +2,7 @@
 For ICS course, terminal big work.
 
 ## Installation
-To install this f\*\*king project, type:
+To install this project, type:
  ```bash
  git clone https://github.com/Gemego/CamStyle-modified/
  ```
