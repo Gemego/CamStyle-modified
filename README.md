@@ -8,7 +8,7 @@ To install this project, type:
  ```
  
  ## Usage
- To use this f\*\*king project, if you want to start training, type:
+ To use this project, if you want to start training, type:
  ```bash
  python train.py
  ```
